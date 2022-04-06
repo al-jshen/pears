@@ -3,7 +3,7 @@ import tempfile
 
 import nox
 
-locations = "korner", "tests", "noxfile.py"
+locations = "pairs", "noxfile.py"
 nox.options.sessions = "lint", "docstrings"
 versions = ["3.9", "3.10"]
 
