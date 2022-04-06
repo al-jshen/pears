@@ -6,7 +6,7 @@ import numpy as np
 from fastkde import fastKDE
 
 
-def pairs(
+def pears(
     dataset,
     indices: Optional[Any] = None,
     marginal_color: str = "#5E81AC",
