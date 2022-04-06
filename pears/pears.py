@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -6,23 +6,44 @@ import numpy as np
 from fastkde import fastKDE
 
 
+def _min_max(x):
+    return np.min(x), np.max(x)
+
+
+def _set_axis_edge_color(ax, color):
+    ax.tick_params(color=color, labelcolor=color)
+    for spine in ax.spines.values():
+        spine.set_edgecolor(color)
+
+
 def pears(
     dataset,
     indices: Optional[Any] = None,
+    labels: Optional[str] = None,
+    truths: Optional[List[float]] = None,
     marginal_color: str = "#5E81AC",
     marginal_lw: float = 3.0,
+    annotate: bool = False,
     scatter: bool = True,
     scatter_color: str = "#5E81AC",
     scatter_alpha: float = 0.2,
-    scatter_edgecolor: str = "none",
     scatter_thin: int = 1,
     scatter_rasterized: bool = True,
+    scatter_kwargs: Optional[Dict] = None,
+    truths_color: str = "#2E3440",
+    truths_linestyle: str = "--",
+    truths_kwargs: Optional[Dict] = None,
     kde_color: str = "#8FBCBB",
-    kde_cmap: str = "bone",
+    kde_cmap: str = "copper",
     kde_levels: List[float] = [0.5, 1.0, 1.5, 2.0],
-    xlim_quantiles: List[float] = [0.01, 0.99],
-    hspace: float = 0.03,
-    wspace: float = 0.03,
+    xlim_quantiles: Optional[List[float]] = None,
+    ylim_quantiles: Optional[List[float]] = None,
+    figsize_scaling: float = 2.2,
+    hspace: float = 0.05,
+    wspace: float = 0.05,
+    fontsize_ticks: float = 13.0,
+    fontsize_labels: float = 22.0,
+    fontsize_annotation: float = 22.0,
 ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.SubplotBase]:
     """
     Creates a pairs plot with marginal distributions along the diagonals and
@@ -38,49 +59,82 @@ def pears(
         List of indices to access data in `dataset`. Pass this if you only want
         to plot a subset of the data. If None, then uses all indices in `dataset`.
 
+    labels: Optional[str]
+        Labels for the axes. If None, then uses the indices of `dataset`.
+
     marginal_color: str = "#5E81AC"
         Color of the marginal KDE line.
 
-    marginal_lw: float = 3.0
+    marginal_lw: float
         Linewidth of the marginal KDE line.
 
-    scatter: bool = True
+    annotate: bool
+        Whether to annotate the marginal panels with the labels.
+
+    scatter: bool
         Whether to plot the scatterplots.
 
-    scatter_color: str = "#5E81AC"
+    scatter_color: str
         Color of the scatterplot points.
 
-    scatter_alpha: float = 0.2
+    scatter_alpha: float
         Alpha of the scatterplot points.
 
-    scatter_edgecolor: str = "none"
-        Edgecolor of the scatterplot points.
-
-    scatter_thin: int = 1
+    scatter_thin: int
         Thin the dataset by this factor before plotting the scatterplot.
         Use this to speed up plotting.
 
-    scatter_rasterized: bool = True
+    scatter_rasterized: bool
         Whether to rasterize the scatterplot.
 
-    kde_color: str = "#8FBCBB"
+    scatter_kwargs: Optional[Dict]
+        Additional keyword arguments to pass to `plt.scatter`.
+
+    truths_color: str
+        Color of the truth lines.
+
+    truths_linestyle: str
+        Linestyle of the truth lines.
+
+    truths_kwargs: Optional[Dict]
+        Additional keyword arguments to pass to `plt.axvline/plt.axhline`
+        for the truth lines.
+
+    kde_color: str
         Color of the KDE contours. Only used if `kde_cmap` is None.
 
-    kde_cmap: str = 'bone'
+    kde_cmap: str
         Colormap of the KDE contours. Takes precedence over `kde_color` if both
         are passed.
 
-    kde_levels: List[float] = [0.5, 1., 1.5, 2.]
+    kde_levels: List[float]
         Sigma levels to plot for the KDE contours.
 
-    xlim_quantiles: List[float] = [0.01, 0.99]
-        Quantiles to use for the x-axis limits.
+    xlim_quantiles: Optional[List[float]]
+        Quantiles to use for the x-axis limits. If None, uses the
+        range of the data (min and max).
 
-    hspace: float = 0.03
+    ylim_quantiles: Optional[List[float]]
+        Quantiles to use for the y-axis limits. If None, uses the
+        range of the data (min and max).
+
+    figsize_scaling: float
+        Scaling factor for the figure size.
+
+    hspace: float
         Gridspec vertical (height) spacing between subplots.
 
-    wspace: float = 0.03
+    wspace: float
         Gridspec horizontal (width) spacing between subplots.
+
+    fontsize_ticks: float
+        Fontsize of the tick labels.
+
+    fontsize_labels: float
+        Fontsize of the axis labels.
+
+    fontsize_annotation: float
+        Fontsize of the annotation text.
 
     Outputs:
     --------
@@ -92,27 +146,35 @@ def pears(
         Axes with matplotlib subplots (2D array of panels).
     """
 
-    assert len(xlim_quantiles) == 2
-    assert xlim_quantiles[0] < xlim_quantiles[1]
-    assert 0.0 <= xlim_quantiles[0] <= 1.0
-    assert 0.0 <= xlim_quantiles[1] <= 1.0
-
     marginal_kwargs = dict(
         color=marginal_color,
         linewidth=marginal_lw,
     )
 
-    scatter_kwargs = dict(
+    scatter_args = dict(
         color=scatter_color,
         alpha=scatter_alpha,
-        edgecolor=scatter_edgecolor,
         rasterized=scatter_rasterized,
+        edgecolor=scatter_color,
+        s=10,
     )
+
+    if scatter_kwargs:
+        scatter_args.update(scatter_kwargs)
 
     kde_kwargs = dict(
         cmap=kde_cmap,  # cmap has priority
         colors=None if kde_cmap else kde_color,
     )
+
+    truths_args = dict(
+        color=truths_color,
+        linestyle=truths_linestyle,
+        zorder=5,
+    )
+
+    if truths_kwargs:
+        truths_args.update(truths_kwargs)
 
     # levels outside of kde_kwargs because they need to be scaled later
     levels = 1.0 - np.exp(-0.5 * np.array(kde_levels) ** 2)
@@ -127,10 +189,13 @@ def pears(
 
     n = len(indices)
 
+    if truths is not None:
+        assert len(truths) == n
+
     fig, ax = plt.subplots(
         n,
         n,
-        figsize=(n * 4 + 2, n * 4),
+        figsize=(n * figsize_scaling + 1, n * figsize_scaling + 1),
         gridspec_kw=dict(hspace=hspace, wspace=wspace),  # fmt: skip
     )
 
@@ -143,11 +208,26 @@ def pears(
         # marginal densities in diagonals
         y, x = fastKDE.pdf(dataset[indices[i]])
         ax[i, i].plot(x, y, **marginal_kwargs)
-        ax[i, i].set_xlim(*np.quantile(x, np.array(xlim_quantiles)))
 
-        ax[i, i].annotate(
-            indices[i], fontsize=35, xy=(0.8, 0.8), xycoords="axes fraction"
-        )
+        if truths is not None:
+            ax[i, i].axvline(truths[i], **truths_args)
+
+        _set_axis_edge_color(ax[i, i], "black")
+
+        if xlim_quantiles:
+            xlim = np.quantile(dataset[indices[i]], np.array(xlim_quantiles))
+        else:
+            xlim = _min_max(dataset[indices[i]])
+
+        ax[i, i].set_xlim(*xlim)
+
+        if annotate:
+            ax[i, i].annotate(
+                labels[i] if labels is not None else indices[i],
+                fontsize=fontsize_annotation,
+                xy=(0.8, 0.8),
+                xycoords="axes fraction",
+            )
 
         # lower diagonal panels
         for j in np.arange(i):
@@ -156,8 +236,28 @@ def pears(
                 ax[i, j].scatter(
                     dataset[indices[j]][::scatter_thin],
                     dataset[indices[i]][::scatter_thin],
-                    **scatter_kwargs
+                    **scatter_args,
                 )
+
+                if truths is not None:
+                    ax[i, j].axvline(truths[j], **truths_args)
+                    ax[i, j].axhline(truths[i], **truths_args)
+
+                if xlim_quantiles:
+                    xlim = np.quantile(dataset[indices[j]], np.array(xlim_quantiles))
+                else:
+                    xlim = _min_max(dataset[indices[j]])
+
+                ax[i, j].set_xlim(*xlim)
+
+                if ylim_quantiles:
+                    ylim = np.quantile(dataset[indices[i]], np.array(ylim_quantiles))
+                else:
+                    ylim = _min_max(dataset[indices[i]])
+
+                ax[i, j].set_ylim(*ylim)
+
+                _set_axis_edge_color(ax[i, j], "black")
 
             # kde contours on top
             z, xy = fastKDE.pdf(dataset[indices[j]], dataset[indices[i]])
@@ -176,8 +276,12 @@ def pears(
             #   rotate tick labels
             if j == 0:
                 if i != j:
-                    ax[i, j].set_ylabel(indices[i], fontsize=40)
-                ax[i, j].tick_params(labelsize=25, labelrotation=45, axis="y")
+                    ax[i, j].set_ylabel(
+                        labels[i] if labels else indices[i], fontsize=fontsize_labels
+                    )
+                ax[i, j].tick_params(
+                    labelsize=fontsize_ticks, labelrotation=45, axis="y"
+                )
 
             # not left column: turn off y tick labels
             else:
@@ -188,8 +292,12 @@ def pears(
             #   make tick labels bigger
             #   rotate tick labels
             if i == n - 1:
-                ax[i, j].set_xlabel(indices[j], fontsize=40)
-                ax[i, j].tick_params(labelsize=25, labelrotation=45, axis="x")
+                ax[i, j].set_xlabel(
+                    labels[j] if labels else indices[j], fontsize=fontsize_labels
+                )
+                ax[i, j].tick_params(
+                    labelsize=fontsize_ticks, labelrotation=45, axis="x"
+                )
 
             # not bottom row: turn off x tick labels
             else:
