@@ -6,8 +6,17 @@ import numpy as np
 from fastkde import fastKDE
 
 
+def kde(data):
+    return fastKDE.pdf(data[~np.isnan(data)])[::-1]
+
+
+def kde2d(x, y):
+    mask = np.isnan(x) | np.isnan(y)
+    return fastKDE.pdf(x[~mask], y[~mask])[::-1]
+
+
 def _min_max(x):
-    return np.min(x), np.max(x)
+    return np.nanmin(x), np.nanmax(x)
 
 
 def _set_axis_edge_color(ax, color):
@@ -36,6 +45,7 @@ def pears(
     kde_color: str = "#8FBCBB",
     kde_cmap: str = "copper",
     kde_levels: List[float] = [0.5, 1.0, 1.5, 2.0],
+    kde_fill: bool = False,
     xlim_quantiles: Optional[List[float]] = None,
     ylim_quantiles: Optional[List[float]] = None,
     figsize_scaling: float = 2.2,
@@ -109,6 +119,9 @@ def pears(
 
     kde_levels: List[float]
         Sigma levels to plot for the KDE contours.
+
+    kde_fill: bool
+        Whether to fill the KDE contours (using plt.contourf instead of plt.contour).
 
     xlim_quantiles: Optional[List[float]]
         Quantiles to use for the x-axis limits. If None, uses the
@@ -206,7 +219,7 @@ def pears(
             ax[i, j].axis("off")
 
         # marginal densities in diagonals
-        y, x = fastKDE.pdf(dataset[indices[i]])
+        x, y = kde(dataset[indices[i]])
         ax[i, i].plot(x, y, **marginal_kwargs)
 
         if truths is not None:
@@ -215,7 +228,7 @@ def pears(
         _set_axis_edge_color(ax[i, i], "black")
 
         if xlim_quantiles:
-            xlim = np.quantile(dataset[indices[i]], np.array(xlim_quantiles))
+            xlim = np.nanquantile(dataset[indices[i]], np.array(xlim_quantiles))
         else:
             xlim = _min_max(dataset[indices[i]])
 
@@ -244,14 +257,14 @@ def pears(
                     ax[i, j].axhline(truths[i], **truths_args)
 
                 if xlim_quantiles:
-                    xlim = np.quantile(dataset[indices[j]], np.array(xlim_quantiles))
+                    xlim = np.nanquantile(dataset[indices[j]], np.array(xlim_quantiles))
                 else:
                     xlim = _min_max(dataset[indices[j]])
 
                 ax[i, j].set_xlim(*xlim)
 
                 if ylim_quantiles:
-                    ylim = np.quantile(dataset[indices[i]], np.array(ylim_quantiles))
+                    ylim = np.nanquantile(dataset[indices[i]], np.array(ylim_quantiles))
                 else:
                     ylim = _min_max(dataset[indices[i]])
 
@@ -260,9 +273,12 @@ def pears(
                 _set_axis_edge_color(ax[i, j], "black")
 
             # kde contours on top
-            z, xy = fastKDE.pdf(dataset[indices[j]], dataset[indices[i]])
+            xy, z = kde2d(dataset[indices[j]], dataset[indices[i]])
             x, y = xy
-            ax[i, j].contour(x, y, z, levels=z.max() * levels, **kde_kwargs)
+            if kde_fill:
+                ax[i, j].contourf(x, y, z, levels=levels, **kde_kwargs)
+            else:
+                ax[i, j].contour(x, y, z, levels=levels, **kde_kwargs)
 
         for j in np.arange(n):
 
