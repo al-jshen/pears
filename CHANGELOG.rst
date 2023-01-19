@@ -1,6 +1,11 @@
 Changelog
 ==========
 
+0.1.5 (2023-01-19)
+++++++++++++++++++
+- Update nanmask to inf mask
+- Update fastKDE dependency
+
 0.1.4 (2022-10-25)
 ++++++++++++++++++
 - Export `kde` and `kde2d` functions.
