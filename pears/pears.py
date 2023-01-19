@@ -7,11 +7,11 @@ from fastkde import fastKDE
 
 
 def kde(data):
-    return fastKDE.pdf(data[~np.isnan(data)])[::-1]
+    return fastKDE.pdf(data[~np.isfinite(data)])[::-1]
 
 
 def kde2d(x, y):
-    mask = np.isnan(x) | np.isnan(y)
+    mask = np.isfinite(x) | np.isfinite(y)
     return fastKDE.pdf(x[~mask], y[~mask])[::-1]
 
 
