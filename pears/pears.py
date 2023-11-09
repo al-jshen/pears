@@ -44,7 +44,7 @@ def pears(
     truths_kwargs: Optional[Dict] = None,
     kde_color: str = "#8FBCBB",
     kde_cmap: str = "copper",
-    kde_levels: List[float] = [0.5, 1.0, 1.5, 2.0],
+    kde_levels: Optional[List[float]] = [0.5, 1.0, 1.5, 2.0],
     kde_fill: bool = False,
     xlim_quantiles: Optional[List[float]] = None,
     ylim_quantiles: Optional[List[float]] = None,
@@ -117,8 +117,9 @@ def pears(
         Colormap of the KDE contours. Takes precedence over `kde_color` if both
         are passed.
 
-    kde_levels: List[float]
-        Sigma levels to plot for the KDE contours.
+    kde_levels: Optional[List[float]]
+        Sigma levels to plot for the KDE contours. If None, then uses the
+        defaults of whatever plt.contour uses.
 
     kde_fill: bool
         Whether to fill the KDE contours (using plt.contourf instead of plt.contour).
@@ -190,7 +191,10 @@ def pears(
         truths_args.update(truths_kwargs)
 
     # levels outside of kde_kwargs because they need to be scaled later
-    levels = 1.0 - np.exp(-0.5 * np.array(kde_levels) ** 2)
+    if kde_levels is not None:
+        levels = 1.0 - np.exp(-0.5 * np.array(kde_levels) ** 2)
+    else:
+        levels = None
 
     if indices is None:
         if isinstance(dataset, dict):
