@@ -26,6 +26,45 @@ def _set_axis_edge_color(ax, color):
         spine.set_edgecolor(color)
 
 
+def quantile_to_level(data, quantile):
+    """Return data levels corresponding to quantile cuts of mass."""
+    isoprop = np.asarray(quantile)
+    values = np.ravel(data)
+    sorted_values = np.sort(values)[::-1]
+    normalized_values = np.cumsum(sorted_values) / values.sum()
+    idx = np.searchsorted(normalized_values, 1 - isoprop)
+    levels = np.take(sorted_values, idx, mode="clip")
+    return levels
+
+
+def contour2d(
+    x, y, z, quantiles=[0.1, 0.3, 0.5, 0.7, 0.9], ax=None, smoothing=2, **kwargs
+):
+    """Plot 2D contours of a 2D distribution. This can be chained after `kde2d`.
+
+    Inputs:
+    =======
+    x: np.ndarray
+        x-axis values.
+    y: np.ndarray
+        y-axis values.
+    z: np.ndarray
+        2D density values.
+    quantiles: list[float]
+        Quantiles to plot contours at.
+    ax: matplotlib.axes.Axes
+        Axes to plot on. If None, then uses plt.contour
+    smoothing: float
+        Smoothing parameter for the density. Passed to `gaussian_filter`. Fixes jagged
+        contours.
+    kwargs: ...
+        Additional keyword arguments to pass to `plt.contour`.
+    """
+    levels = quantile_to_level(z, quantiles)
+    p = ax if ax is not None else plt
+    p.contour(x, y, gaussian_filter(z, sigma=smoothing), levels=levels, **kwargs)
+
+
 def pears(
     dataset,
     indices: Optional[Any] = None,
@@ -45,7 +84,8 @@ def pears(
     truths_kwargs: Optional[Dict] = None,
     kde_color: str = "#8FBCBB",
     kde_cmap: str = "copper",
-    kde_levels: Optional[List[float]] = [0.5, 1.0, 1.5, 2.0],
+    kde_quantiles: List[float] = [0.1, 0.3, 0.5, 0.7, 0.9],
+    kde_smoothing: float = 2.0,
     kde_fill: bool = False,
     xlim_quantiles: Optional[List[float]] = None,
     ylim_quantiles: Optional[List[float]] = None,
@@ -118,9 +158,13 @@ def pears(
         Colormap of the KDE contours. Takes precedence over `kde_color` if both
         are passed.
 
-    kde_levels: Optional[List[float]]
-        Sigma levels to plot for the KDE contours. If None, then uses the
-        defaults of whatever plt.contour uses.
+    kde_quantiles: List[float]
+        Quantiles to plot for the KDE contours. For example, a value of 0.5
+        makes a contour at a level such that 50% of the data is below/outside it.
+
+    kde_smoothing: float
+        Smoothing parameter for the KDE contours. Passed to `gaussian_filter`.
+        Fixes jagged contours.
 
     kde_fill: bool
         Whether to fill the KDE contours (using plt.contourf instead of plt.contour).
@@ -190,12 +234,6 @@ def pears(
 
     if truths_kwargs:
         truths_args.update(truths_kwargs)
-
-    # levels outside of kde_kwargs because they need to be scaled later
-    if kde_levels is not None:
-        levels = 1.0 - np.exp(-0.5 * np.array(kde_levels) ** 2)
-    else:
-        levels = None
 
     if indices is None:
         if isinstance(dataset, dict):
@@ -279,10 +317,19 @@ def pears(
             # kde contours on top
             xy, z = kde2d(dataset[indices[j]], dataset[indices[i]])
             x, y = xy
+            levels = quantile_to_level(z, kde_quantiles)
             if kde_fill:
                 ax[i, j].contourf(x, y, z, levels=levels, **kde_kwargs)
             else:
-                ax[i, j].contour(x, y, z, levels=levels, **kde_kwargs)
+                contour2d(
+                    x,
+                    y,
+                    z,
+                    quantiles=kde_quantiles,
+                    ax=ax[i, j],
+                    smoothing=kde_smoothing,
+                    **kde_kwargs,
+                )
 
         for j in np.arange(n):
             # hacky way to try to make tick positions consistent
@@ -335,42 +382,3 @@ def pears(
                 ax[i, j].yaxis.label.set_visible(False)
 
     return fig, ax
-
-
-def quantile_to_level(data, quantile):
-    """Return data levels corresponding to quantile cuts of mass."""
-    isoprop = np.asarray(quantile)
-    values = np.ravel(data)
-    sorted_values = np.sort(values)[::-1]
-    normalized_values = np.cumsum(sorted_values) / values.sum()
-    idx = np.searchsorted(normalized_values, 1 - isoprop)
-    levels = np.take(sorted_values, idx, mode="clip")
-    return levels
-
-
-def contour_2d(
-    x, y, z, quantiles=[0.1, 0.3, 0.5, 0.7, 0.9], ax=None, smoothing=2, **kwargs
-):
-    """Plot 2D contours of a 2D distribution. This can be chained after `kde2d`.
-
-    Inputs:
-    =======
-    x: np.ndarray
-        x-axis values.
-    y: np.ndarray
-        y-axis values.
-    z: np.ndarray
-        2D density values.
-    quantiles: list[float]
-        Quantiles to plot contours at.
-    ax: matplotlib.axes.Axes
-        Axes to plot on. If None, then uses plt.contour
-    smoothing: float
-        Smoothing parameter for the density. Passed to `gaussian_filter`. Fixes jagged
-        contours.
-    kwargs: ...
-        Additional keyword arguments to pass to `plt.contour`.
-    """
-    levels = quantile_to_level(z, quantiles)
-    p = ax if ax is not None else plt
-    p.contour(x, y, gaussian_filter(z, sigma=smoothing), levels=levels, **kwargs)
