@@ -4,6 +4,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from fastkde import fastKDE
+from scipy.ndimage import gaussian_filter
 
 
 def kde(data):
@@ -217,7 +218,6 @@ def pears(
     )
 
     for i in np.arange(n):
-
         # turn off upper panels
         for j in np.arange(i + 1, n):
             ax[i, j].axis("off")
@@ -285,7 +285,6 @@ def pears(
                 ax[i, j].contour(x, y, z, levels=levels, **kde_kwargs)
 
         for j in np.arange(n):
-
             # hacky way to try to make tick positions consistent
             ax[i, j].yaxis.set_major_locator(plt.MaxNLocator(4))
             ax[i, j].xaxis.set_major_locator(plt.MaxNLocator(4))
@@ -336,3 +335,42 @@ def pears(
                 ax[i, j].yaxis.label.set_visible(False)
 
     return fig, ax
+
+
+def quantile_to_level(data, quantile):
+    """Return data levels corresponding to quantile cuts of mass."""
+    isoprop = np.asarray(quantile)
+    values = np.ravel(data)
+    sorted_values = np.sort(values)[::-1]
+    normalized_values = np.cumsum(sorted_values) / values.sum()
+    idx = np.searchsorted(normalized_values, 1 - isoprop)
+    levels = np.take(sorted_values, idx, mode="clip")
+    return levels
+
+
+def contour_2d(
+    x, y, z, quantiles=[0.1, 0.3, 0.5, 0.7, 0.9], ax=None, smoothing=2, **kwargs
+):
+    """Plot 2D contours of a 2D distribution. This can be chained after `kde2d`.
+
+    Inputs:
+    =======
+    x: np.ndarray
+        x-axis values.
+    y: np.ndarray
+        y-axis values.
+    z: np.ndarray
+        2D density values.
+    quantiles: list[float]
+        Quantiles to plot contours at.
+    ax: matplotlib.axes.Axes
+        Axes to plot on. If None, then uses plt.contour
+    smoothing: float
+        Smoothing parameter for the density. Passed to `gaussian_filter`. Fixes jagged
+        contours.
+    kwargs: ...
+        Additional keyword arguments to pass to `plt.contour`.
+    """
+    levels = quantile_to_level(z, quantiles)
+    p = ax if ax is not None else plt
+    p.contour(x, y, gaussian_filter(z, sigma=smoothing), levels=levels, **kwargs)
