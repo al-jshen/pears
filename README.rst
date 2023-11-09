@@ -8,7 +8,8 @@ Make pairs plots!
    pip install pears
 
 
-## Example
+Example
+-------
 
 .. code-block:: python
 
@@ -19,3 +20,5 @@ Make pairs plots!
    pears.pears(x.T)
 
 .. image:: example.png
+
+
