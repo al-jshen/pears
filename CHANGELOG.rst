@@ -1,6 +1,10 @@
 Changelog
 ==========
 
+0.1.7 (2024-04-14)
+++++++++++++++++++
+- implement plotting of multiple datasets 
+
 0.1.5 (2023-01-19)
 ++++++++++++++++++
 - Update nanmask to inf mask
