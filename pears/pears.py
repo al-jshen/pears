@@ -76,7 +76,7 @@ def pears(
     scatter: bool = True,
     scatter_color: str = "#5E81AC",
     scatter_alpha: float = 0.2,
-    scatter_thin: int = 1,
+    scatter_thin: Optional[int] = None,
     scatter_rasterized: bool = True,
     scatter_kwargs: Optional[Dict] = None,
     truths_color: str = "#2E3440",
@@ -95,8 +95,32 @@ def pears(
     fontsize_ticks: float = 13.0,
     fontsize_labels: float = 22.0,
     fontsize_annotation: float = 22.0,
+    force: bool = False,
     fig: Optional[matplotlib.figure.Figure] = None,
     ax: Optional[matplotlib.axes.SubplotBase] = None,
+    alt_marginal_colors: list[str] = [
+        "#bf616a",
+        "#a3be8c",
+        "#b48ead",
+        "#d08770",
+        "#8fbcbb",
+    ],
+    alt_scatter_colors: list[str] = [
+        "#bf616a",
+        "#a3be8c",
+        "#b48ead",
+        "#d08770",
+        "#8fbcbb",
+    ],
+    alt_truths_colors: list[str] = [
+        "#bf616a",
+        "#a3be8c",
+        "#b48ead",
+        "#d08770",
+        "#8fbcbb",
+    ],
+    alt_kde_colors: list[str] = ["#bf616a", "#a3be8c", "#b48ead", "#d08770", "#8fbcbb"],
+    alt_cmaps: list[str] = ["YlGnBu", "YlOrRd", "BuPu", "bone", "pink"],
 ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.SubplotBase]:
     """
     Creates a pairs plot with marginal distributions along the diagonals and
@@ -197,11 +221,19 @@ def pears(
     fontsize_annotation: float
         Fontsize of the annotation text.
 
+    force: bool
+        Whether to force the plot to be created.
+
     fig: Optional[matplotlib.figure.Figure]
         Top level container with all the plot elements.
 
     ax: Optional[matplotlib.axes.SubplotBase]
         Axes with matplotlib subplots (2D array of panels).
+
+    alt_marginal_colors / alt_scatter_colors / alt_truths_colors / alt_kde_colors / alt_cmaps: list[str]
+        Alternative colors/cmaps to use for the marginal, scatter, truths, and kde plots.
+        This activates on secondary/third/fourth/fifth calls to the function.
+
 
     Outputs:
     --------
@@ -212,6 +244,24 @@ def pears(
     ax: matplotlib.axes.SubplotBase
         Axes with matplotlib subplots (2D array of panels).
     """
+
+    if isinstance(dataset, np.ndarray):
+        if dataset.shape[0] > dataset.shape[1] and not force:
+            raise ValueError(
+                "Received input array shape (n, d) where n > d. This makes a plot with n^2 panels. If you really want to do this, toggle the `force` option."
+            )
+
+    if fig is None or ax is None:
+        run_num = 0
+    else:
+        run_num = len(ax[0, 0].lines)
+
+    if run_num > 0:
+        marginal_color = alt_marginal_colors[run_num % len(alt_marginal_colors)]
+        scatter_color = alt_scatter_colors[run_num % len(alt_scatter_colors)]
+        truths_color = alt_truths_colors[run_num % len(alt_truths_colors)]
+        kde_color = alt_kde_colors[run_num % len(alt_kde_colors)]
+        kde_cmap = alt_cmaps[run_num % len(alt_cmaps)]
 
     marginal_kwargs = dict(
         color=marginal_color,
@@ -251,12 +301,16 @@ def pears(
 
     assert indices is not None
 
+    if scatter_thin is None:
+        num_points = len(dataset[indices[0]])
+        scatter_thin = max(1, num_points // 1000)  # limit to 1000 points
+
     n = len(indices)
 
     if truths is not None:
         assert len(truths) == n
 
-    if fig is None and ax is None:
+    if run_num == 0:
         fig, ax = plt.subplots(
             n,
             n,
