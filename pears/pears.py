@@ -1,9 +1,9 @@
 from typing import Any, Dict, List, Optional, Tuple
 
+from fastkde import fastKDE
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from fastkde import fastKDE
 from scipy.ndimage import gaussian_filter
 
 
@@ -95,6 +95,8 @@ def pears(
     fontsize_ticks: float = 13.0,
     fontsize_labels: float = 22.0,
     fontsize_annotation: float = 22.0,
+    fig: Optional[matplotlib.figure.Figure] = None,
+    ax: Optional[matplotlib.axes.SubplotBase] = None,
 ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.SubplotBase]:
     """
     Creates a pairs plot with marginal distributions along the diagonals and
@@ -195,6 +197,12 @@ def pears(
     fontsize_annotation: float
         Fontsize of the annotation text.
 
+    fig: Optional[matplotlib.figure.Figure]
+        Top level container with all the plot elements.
+
+    ax: Optional[matplotlib.axes.SubplotBase]
+        Axes with matplotlib subplots (2D array of panels).
+
     Outputs:
     --------
 
@@ -248,12 +256,16 @@ def pears(
     if truths is not None:
         assert len(truths) == n
 
-    fig, ax = plt.subplots(
-        n,
-        n,
-        figsize=(n * figsize_scaling + 1, n * figsize_scaling + 1),
-        gridspec_kw=dict(hspace=hspace, wspace=wspace),  # fmt: skip
-    )
+    if fig is None and ax is None:
+        fig, ax = plt.subplots(
+            n,
+            n,
+            figsize=(n * figsize_scaling + 1, n * figsize_scaling + 1),
+            gridspec_kw=dict(hspace=hspace, wspace=wspace),  # fmt: skip
+        )
+    assert fig is not None and ax is not None
+    assert isinstance(ax, np.ndarray)
+    assert ax.shape == (n, n)
 
     for i in np.arange(n):
         # turn off upper panels
