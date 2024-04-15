@@ -335,10 +335,14 @@ def pears(
 
         _set_axis_edge_color(ax[i, i], "black")
 
+        _xlim = ax[i, i].get_xlim()
+
         if xlim_quantiles:
             xlim = np.nanquantile(dataset[indices[i]], np.array(xlim_quantiles))
         else:
             xlim = _min_max(dataset[indices[i]])
+
+        xlim = (min(xlim[0], _xlim[0]), max(xlim[1], _xlim[1]))
 
         ax[i, i].set_xlim(*xlim)
 
@@ -364,17 +368,25 @@ def pears(
                     ax[i, j].axvline(truths[j], **truths_args)
                     ax[i, j].axhline(truths[i], **truths_args)
 
+                _xlim = ax[i, j].get_xlim()
+
                 if xlim_quantiles:
                     xlim = np.nanquantile(dataset[indices[j]], np.array(xlim_quantiles))
                 else:
                     xlim = _min_max(dataset[indices[j]])
 
+                xlim = (min(xlim[0], _xlim[0]), max(xlim[1], _xlim[1]))
+
                 ax[i, j].set_xlim(*xlim)
+
+                _ylim = ax[i, j].get_ylim()
 
                 if ylim_quantiles:
                     ylim = np.nanquantile(dataset[indices[i]], np.array(ylim_quantiles))
                 else:
                     ylim = _min_max(dataset[indices[i]])
+
+                ylim = (min(ylim[0], _ylim[0]), max(ylim[1], _ylim[1]))
 
                 ax[i, j].set_ylim(*ylim)
 
