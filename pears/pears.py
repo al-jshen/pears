@@ -245,7 +245,7 @@ def pears(
         Axes with matplotlib subplots (2D array of panels).
     """
 
-    if isinstance(dataset, np.ndarray):
+    if hasattr(dataset, "shape"):
         if dataset.shape[0] > dataset.shape[1] and not force:
             raise ValueError(
                 "Received input array shape (n, d) where n > d. This makes a plot with n^2 panels. If you really want to do this, toggle the `force` option."
