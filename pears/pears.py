@@ -72,6 +72,7 @@ def pears(
     truths: Optional[List[float]] = None,
     marginal_color: str = "#5E81AC",
     marginal_lw: float = 3.0,
+    summarize: bool = True,
     annotate: bool = False,
     scatter: bool = True,
     scatter_color: str = "#5E81AC",
@@ -144,6 +145,9 @@ def pears(
 
     marginal_lw: float
         Linewidth of the marginal KDE line.
+
+    summarize: bool
+        Whether to print summary statistics for each of the variables (i.e., quantiles)
 
     annotate: bool
         Whether to annotate the marginal panels with the labels.
@@ -352,6 +356,15 @@ def pears(
                 fontsize=fontsize_annotation,
                 xy=(0.8, 0.8),
                 xycoords="axes fraction",
+            )
+
+        if summarize:
+            lower, median, upper = np.nanquantile(
+                dataset[indices[i]], [0.16, 0.5, 0.84]
+            )
+            ax[i, i].set_title(
+                f"{labels[i] if labels is not None else indices[i]} = ${median:.2f}^{{+{upper - median:.2f}}}_{{-{median - lower:.2f}}}$",
+                fontsize=fontsize_labels,
             )
 
         # lower diagonal panels
