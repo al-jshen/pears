@@ -96,6 +96,7 @@ def pears(
     fontsize_ticks: float = 13.0,
     fontsize_labels: float = 22.0,
     fontsize_annotation: float = 22.0,
+    fontsize_summary: float = 22.0,
     force: bool = False,
     fig: Optional[matplotlib.figure.Figure] = None,
     ax: Optional[matplotlib.axes.SubplotBase] = None,
@@ -224,6 +225,9 @@ def pears(
 
     fontsize_annotation: float
         Fontsize of the annotation text.
+
+    fontsize_summary: float
+        Fontsize of the summary text.
 
     force: bool
         Whether to force the plot to be created.
@@ -364,7 +368,7 @@ def pears(
             )
             ax[i, i].set_title(
                 f"{labels[i] if labels is not None else indices[i]} = ${median:.2f}^{{+{upper - median:.2f}}}_{{-{median - lower:.2f}}}$",
-                fontsize=fontsize_labels,
+                fontsize=fontsize_summary,
             )
 
         # lower diagonal panels
