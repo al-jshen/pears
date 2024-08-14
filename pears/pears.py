@@ -1,18 +1,19 @@
 from typing import Any, Dict, List, Optional, Tuple
 
-from fastkde import fastKDE
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from fastkde import fastKDE
 from scipy.ndimage import gaussian_filter
 
 
 def kde(data):
-    return fastKDE.pdf(data[np.isfinite(data)])[::-1]
+    mask = np.asarray(np.isfinite(data), dtype=bool)
+    return fastKDE.pdf(data[mask])[::-1]
 
 
 def kde2d(x, y):
-    mask = np.isfinite(x) & np.isfinite(y)
+    mask = np.asarray(np.isfinite(x) & np.isfinite(y), dtype=bool)
     return fastKDE.pdf(x[mask], y[mask])[::-1]
 
 
