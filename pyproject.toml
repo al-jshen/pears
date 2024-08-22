@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pears"
-version = "0.1.7"
+version = "0.1.8"
 description = "Tools for dealing with 2D densities."
 authors = ["Jeff Shen <jshen2014@hotmail.com>"]
 
