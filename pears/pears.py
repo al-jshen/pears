@@ -7,7 +7,7 @@ from fastkde import fastKDE
 from scipy.ndimage import gaussian_filter
 
 
-def kde(data):
+def kde1d(data):
     mask = np.asarray(np.isfinite(data), dtype=bool)
     return fastKDE.pdf(data[mask])[::-1]
 
@@ -73,7 +73,7 @@ def pears(
     truths: Optional[List[float]] = None,
     marginal_color: str = "#5E81AC",
     marginal_lw: float = 3.0,
-    summarize: bool = True,
+    summarize: bool = False,
     annotate: bool = False,
     scatter: bool = True,
     scatter_color: str = "#5E81AC",
@@ -84,6 +84,7 @@ def pears(
     truths_color: str = "#2E3440",
     truths_linestyle: str = "--",
     truths_kwargs: Optional[Dict] = None,
+    kde: bool = True,
     kde_color: str = "#8FBCBB",
     kde_cmap: str = "copper",
     kde_quantiles: List[float] = [0.1, 0.3, 0.5, 0.7, 0.9],
@@ -336,7 +337,7 @@ def pears(
             ax[i, j].axis("off")
 
         # marginal densities in diagonals
-        x, y = kde(dataset[indices[i]])
+        x, y = kde1d(dataset[indices[i]])
         ax[i, i].plot(x, y, **marginal_kwargs)
 
         if truths is not None:
@@ -410,22 +411,23 @@ def pears(
 
                 _set_axis_edge_color(ax[i, j], "black")
 
-            # kde contours on top
-            xy, z = kde2d(dataset[indices[j]], dataset[indices[i]])
-            x, y = xy
-            levels = quantile_to_level(z, kde_quantiles)
-            if kde_fill:
-                ax[i, j].contourf(x, y, z, levels=levels, **kde_kwargs)
-            else:
-                contour2d(
-                    x,
-                    y,
-                    z,
-                    quantiles=kde_quantiles,
-                    ax=ax[i, j],
-                    smoothing=kde_smoothing,
-                    **kde_kwargs,
-                )
+            if kde:
+                # kde contours on top
+                xy, z = kde2d(dataset[indices[j]], dataset[indices[i]])
+                x, y = xy
+                levels = quantile_to_level(z, kde_quantiles)
+                if kde_fill:
+                    ax[i, j].contourf(x, y, z, levels=levels, **kde_kwargs)
+                else:
+                    contour2d(
+                        x,
+                        y,
+                        z,
+                        quantiles=kde_quantiles,
+                        ax=ax[i, j],
+                        smoothing=kde_smoothing,
+                        **kde_kwargs,
+                    )
 
         for j in np.arange(n):
             # hacky way to try to make tick positions consistent
