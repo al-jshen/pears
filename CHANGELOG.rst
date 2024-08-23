@@ -1,6 +1,13 @@
 Changelog
 ==========
 
+0.1.8 (2024-08-22)
+++++++++++++++++++
+- add summary statistics option
+- allow disabling of 2D KDEs
+- generalize shape checking
+- fix mask type casting
+
 0.1.7 (2024-04-14)
 ++++++++++++++++++
 - implement plotting of multiple datasets 
