@@ -1,6 +1,10 @@
 Changelog
 ==========
 
+0.1.9 (2025-05-10)
+++++++++++++++++++
+- update dependency versions
+
 0.1.8 (2024-08-22)
 ++++++++++++++++++
 - add summary statistics option
