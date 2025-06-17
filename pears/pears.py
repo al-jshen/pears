@@ -9,12 +9,12 @@ from scipy.ndimage import gaussian_filter
 
 def kde1d(data):
     mask = np.asarray(np.isfinite(data), dtype=bool)
-    return fastKDE.pdf(data[mask])[::-1]
+    return fastKDE.pdf(data[mask], use_xarray=False)[::-1]
 
 
 def kde2d(x, y):
     mask = np.asarray(np.isfinite(x) & np.isfinite(y), dtype=bool)
-    return fastKDE.pdf(x[mask], y[mask])[::-1]
+    return fastKDE.pdf(x[mask], y[mask], use_xarray=False)[::-1]
 
 
 def _min_max(x):
