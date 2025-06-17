@@ -1,6 +1,10 @@
 Changelog
 ==========
 
+0.1.10 (2025-06-17)
+++++++++++++++++++
+- disable xarray in fastKDE
+
 0.1.9 (2025-05-10)
 ++++++++++++++++++
 - update dependency versions
